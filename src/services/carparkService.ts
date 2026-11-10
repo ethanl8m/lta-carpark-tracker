@@ -7,7 +7,7 @@ const STORAGE_KEY_FAVORITES = 'sg_parkpulse_favorites_v1';
 
 export const DEFAULT_BACKEND_CONFIG: BackendIntegrationConfig = {
   mode: 'simulator',
-  apiUrl: 'https://api.data.gov.sg/v1/transport/carpark-availability',
+  apiUrl: '/api/carparkavailability',
   apiKey: '',
   pollingIntervalSeconds: 30,
   autoRefresh: true,
@@ -195,6 +195,45 @@ export class CarparkService {
       return { carparks: merged, rawResponse: data };
     }
 
+    // Check if it's LTA DataMall OData format (returned by /api/carparkavailability)
+    // schema: { value: [ { CarParkID, Area, Development, Location, AvailableLots, LotType, Agency } ] }
+    if (Array.isArray(data?.value)) {
+      const ltaItems = data.value;
+      const ltaMap = new Map<string, number>();
+
+      for (const item of ltaItems) {
+        if (item.CarParkID) {
+          ltaMap.set(String(item.CarParkID).toLowerCase(), Number(item.AvailableLots) || 0);
+        }
+        if (item.Development) {
+          ltaMap.set(String(item.Development).toLowerCase(), Number(item.AvailableLots) || 0);
+        }
+      }
+
+      const merged = baseCarparks.map((cp) => {
+        const liveAvail =
+          ltaMap.get(cp.id.toLowerCase()) ??
+          ltaMap.get(cp.name.toLowerCase());
+
+        if (liveAvail !== undefined) {
+          return {
+            ...cp,
+            lots: {
+              ...cp.lots,
+              car: {
+                total: Math.max(cp.lots.car.total, liveAvail),
+                available: liveAvail,
+              },
+            },
+            lastUpdated: data.timestamp || new Date().toISOString(),
+          };
+        }
+        return cp;
+      });
+
+      return { carparks: merged, rawResponse: data };
+    }
+
     // Check if response is a direct array of Carpark objects
     if (Array.isArray(data)) {
       return { carparks: data as Carpark[], rawResponse: data };
@@ -205,7 +244,7 @@ export class CarparkService {
       return { carparks: data.carparks as Carpark[], rawResponse: data };
     }
 
-    throw new Error('Unrecognized response format. Expected GovTech format or Carpark[] array.');
+    throw new Error('Unrecognized response format. Expected LTA DataMall format (data.value) or Carpark[] array.');
   }
 
   // Quick test connectivity for the Backend Integration modal

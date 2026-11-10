@@ -169,18 +169,37 @@ export const BackendConfigModal: React.FC<BackendConfigModalProps> = ({
                 </div>
               </div>
 
-              {/* Endpoint URL */}
+              {/* Endpoint URL with Presets */}
               <div>
-                <label className="block text-slate-300 font-semibold mb-1">API Endpoint URL</label>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-slate-300 font-semibold">API Endpoint URL</label>
+                  <div className="flex items-center gap-1.5 text-[11px]">
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, apiUrl: '/api/carparkavailability' }))}
+                      className="text-emerald-400 hover:text-emerald-300 underline font-mono"
+                    >
+                      /api/carparkavailability
+                    </button>
+                    <span className="text-slate-500">·</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((p) => ({ ...p, apiUrl: '/api/health' }))}
+                      className="text-sky-400 hover:text-sky-300 underline font-mono"
+                    >
+                      /api/health
+                    </button>
+                  </div>
+                </div>
                 <input
                   type="text"
                   value={formData.apiUrl}
                   onChange={(e) => setFormData((p) => ({ ...p, apiUrl: e.target.value }))}
-                  placeholder="https://api.data.gov.sg/v1/transport/carpark-availability or http://localhost:5000/api/carparks"
+                  placeholder="/api/carparkavailability or https://datamall2.mytransport.sg/ltaodataservice/CarParkAvailabilityv2"
                   className="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 font-mono text-slate-200 focus:outline-none focus:border-emerald-500"
                 />
                 <span className="text-[11px] text-slate-400 mt-1 block">
-                  Supports GovTech DataMall format or standard Carpark JSON format.
+                  Pulls live data from LTA DataMall CarParkAvailabilityv2. Keys are read securely from server environment variables (<code className="text-slate-300 font-mono">LTA_DATAMALL_ACCOUNT_KEY</code>).
                 </span>
               </div>
 
